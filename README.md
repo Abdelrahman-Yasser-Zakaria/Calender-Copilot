@@ -28,7 +28,7 @@ graph TD
 
 ## Project Structure
 
-```
+```text
 calendar_copilot/
 ├── calendar_copilot/       # Main Django project configuration
 │   ├── settings.py         # App settings (Env vars, Installed Apps)
@@ -69,8 +69,8 @@ Follow these steps to run the project locally.
 
 ### 1. Clone the Repository
 ```bash
-git clone <repository-url>
-cd Qupil-Task
+git clone https://github.com/Abdelrahman-Yasser-Zakaria/Calender-Copilot.git
+cd Calender-Copilot
 ```
 
 ### 2. Set Up Virtual Environment
