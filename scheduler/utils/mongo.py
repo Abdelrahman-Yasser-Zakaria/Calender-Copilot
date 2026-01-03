@@ -9,7 +9,10 @@ def get_db_handle():
     global _mongo_client
     
     uri = os.getenv('MONGO_URI')
+    if not uri:
+        raise ValueError("MONGO_URI environment variable is not set")
     
+    # first connection
     if _mongo_client is None:
         _mongo_client = MongoClient(uri)
 

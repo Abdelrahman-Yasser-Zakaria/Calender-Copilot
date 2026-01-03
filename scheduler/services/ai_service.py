@@ -12,7 +12,7 @@ def parse_availability_with_gemini(text):
         return {"error": "GOOGLE_API_KEY not configured"}
 
     genai.configure(api_key=api_key)
-    model = genai.GenerativeModel('gemini-1.5-flash') # Using 1.5 Flash as 3 Flash might not be available in SDK yet, or sticking to standard stable models
+    model = genai.GenerativeModel('gemini-3-flash-preview')
 
     system_instruction = """
     Role: You are a calendar scheduling assistant.

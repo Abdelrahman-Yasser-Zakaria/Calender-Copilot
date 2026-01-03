@@ -53,15 +53,16 @@
             <h2 class="text-2xl font-bold text-gray-800 mb-4">Proposed Schedule</h2>
             
             <div id="calendarGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-                <!-- Slots will be injected here -->
+                <!-- Slots will be injected here from the api response -->
             </div>
 
             <div class="flex justify-end">
                 <button id="saveBtn" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
-                    Looks good? Save
+                    Save
                 </button>
             </div>
         </div>
+
     </div>
 
     <script>
@@ -74,8 +75,8 @@
         let currentSlots = [];
 
         generateBtn.addEventListener('click', async () => {
-            const text = document.getElementById('availabilityInput').value;
-            if (!text.trim()) {
+            const availabilityText = document.getElementById('availabilityInput').value;
+            if (!availabilityText.trim()) {
                 showError('Please enter your availability.');
                 return;
             }
@@ -85,10 +86,10 @@
             resultSection.classList.add('hidden');
 
             try {
-                const response = await fetch('/api/generate-schedule/', {
+                const response = await fetch('http://127.0.0.1:8000/api/generate-schedule/', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ text: text })
+                    body: JSON.stringify({ availability_text: availabilityText })
                 });
 
                 const data = await response.json();
@@ -123,7 +124,7 @@
             saveBtn.disabled = true;
 
             try {
-                const response = await fetch('/api/save-schedule/', {
+                const response = await fetch('http://127.0.0.1:8000/api/save-schedule/', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -151,19 +152,39 @@
         });
 
         function renderCalendar(slots) {
+            console.log("Raw Slots from API:", slots); // Debugging: Check if multiple slots exist for Thursday
+
             calendarGrid.innerHTML = '';
             if (slots.length === 0) {
                 calendarGrid.innerHTML = '<p class="text-gray-500 col-span-3 text-center">No slots found.</p>';
                 return;
             }
 
-            // Group by day for better visualization if needed, but for now simple cards
-            slots.forEach(slot => {
+            // Group slots by day
+            const grouped = slots.reduce((acc, slot) => {
+                // Ensure key is standardized (title case) just in case
+                const day = slot.day.trim(); 
+                if (!acc[day]) acc[day] = [];
+                acc[day].push(`${slot.start_time} - ${slot.end_time}`);
+                return acc;
+            }, {});
+
+            console.log("Grouped Data:", grouped); // Debugging: Check if grouping worked
+
+            // Define day order for consistent rendering
+            const dayOrder = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+            
+            // Sort days based on standard week order
+            const sortedDays = Object.keys(grouped).sort((a, b) => dayOrder.indexOf(a) - dayOrder.indexOf(b));
+
+            sortedDays.forEach(day => {
                 const card = document.createElement('div');
-                card.className = 'border rounded p-4 bg-blue-50 border-blue-200';
+                card.className = 'border rounded p-4 bg-blue-50 border-blue-200 shadow-sm';
                 card.innerHTML = `
-                    <h3 class="font-bold text-blue-800">${slot.day}</h3>
-                    <p class="text-gray-700">${slot.start_time} - ${slot.end_time}</p>
+                    <h3 class="font-bold text-blue-800 border-b border-blue-100 mb-2 pb-1">${day}</h3>
+                    <ul class="text-gray-700 space-y-1">
+                        ${grouped[day].map(time => `<li>${time}</li>`).join('')}
+                    </ul>
                 `;
                 calendarGrid.appendChild(card);
             });

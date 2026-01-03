@@ -9,11 +9,11 @@ from bson import ObjectId
 
 class GenerateScheduleView(APIView):
     def post(self, request):
-        text = request.data.get('text')
-        if not text:
+        availability_text = request.data.get('availability_text')
+        if not availability_text:
             return Response({"error": "No text provided"}, status=status.HTTP_400_BAD_REQUEST)
 
-        slots = parse_availability_with_gemini(text)
+        slots = parse_availability_with_gemini(availability_text)
         
         if "error" in slots:
              return Response(slots, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
