@@ -1,0 +1,9 @@
+# Environments
+.env
+venv
+
+# Plans
+project_plan
+
+# pycache
+__pycache__/

@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendar Copilot</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 2s linear infinite;
+            display: inline-block;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col items-center py-10">
+
+    <div class="container mx-auto px-4 max-w-3xl">
+        <!-- Hero Section -->
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-gray-800 mb-2">Calendar Copilot</h1>
+            <p class="text-gray-600">Setup your weekly availability using natural language.</p>
+        </div>
+
+        <!-- Input Section -->
+        <div class="bg-white shadow-md rounded-lg p-6 mb-8">
+            <div class="mb-4">
+                <label for="tutorName" class="block text-gray-700 text-sm font-bold mb-2">Tutor Name</label>
+                <input type="text" id="tutorName" placeholder="Enter your name" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+            </div>
+
+            <div class="mb-4">
+                <label for="availabilityInput" class="block text-gray-700 text-sm font-bold mb-2">Availability</label>
+                <textarea id="availabilityInput" rows="4" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="e.g., I am available between noon and 4pm on weekends, after 7 pm to midnight on Monday and Wednesday..."></textarea>
+            </div>
+
+            <button id="generateBtn" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline w-full flex justify-center items-center">
+                <span>Generate Calendar</span>
+            </button>
+            <div id="errorMsg" class="text-red-500 text-sm mt-2 hidden"></div>
+        </div>
+
+        <!-- Result Section (Hidden initially) -->
+        <div id="resultSection" class="bg-white shadow-md rounded-lg p-6 hidden">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">Proposed Schedule</h2>
+            
+            <div id="calendarGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                <!-- Slots will be injected here -->
+            </div>
+
+            <div class="flex justify-end">
+                <button id="saveBtn" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+                    Looks good? Save
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const generateBtn = document.getElementById('generateBtn');
+        const saveBtn = document.getElementById('saveBtn');
+        const resultSection = document.getElementById('resultSection');
+        const calendarGrid = document.getElementById('calendarGrid');
+        const errorMsg = document.getElementById('errorMsg');
+        
+        let currentSlots = [];
+
+        generateBtn.addEventListener('click', async () => {
+            const text = document.getElementById('availabilityInput').value;
+            if (!text.trim()) {
+                showError('Please enter your availability.');
+                return;
+            }
+
+            setLoading(true);
+            hideError();
+            resultSection.classList.add('hidden');
+
+            try {
+                const response = await fetch('/api/generate-schedule/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: text })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    currentSlots = data.slots;
+                    renderCalendar(currentSlots);
+                    resultSection.classList.remove('hidden');
+                } else {
+                    showError(data.error || 'Failed to generate schedule.');
+                }
+            } catch (err) {
+                showError('An error occurred. Please try again.');
+                console.error(err);
+            } finally {
+                setLoading(false);
+            }
+        });
+
+        saveBtn.addEventListener('click', async () => {
+            const tutorName = document.getElementById('tutorName').value;
+            const rawInput = document.getElementById('availabilityInput').value;
+
+            if (!tutorName.trim()) {
+                alert('Please enter your name.');
+                document.getElementById('tutorName').focus();
+                return;
+            }
+
+            const originalText = saveBtn.innerText;
+            saveBtn.innerText = 'Saving...';
+            saveBtn.disabled = true;
+
+            try {
+                const response = await fetch('/api/save-schedule/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        tutor_name: tutorName,
+                        raw_input: rawInput,
+                        slots: currentSlots
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    alert(`Schedule saved successfully! Tutor ID: ${data.tutor_id}`);
+                    // Optional: Reset form
+                } else {
+                    alert('Failed to save schedule: ' + (data.error || 'Unknown error'));
+                }
+            } catch (err) {
+                alert('An error occurred while saving.');
+                console.error(err);
+            } finally {
+                saveBtn.innerText = originalText;
+                saveBtn.disabled = false;
+            }
+        });
+
+        function renderCalendar(slots) {
+            calendarGrid.innerHTML = '';
+            if (slots.length === 0) {
+                calendarGrid.innerHTML = '<p class="text-gray-500 col-span-3 text-center">No slots found.</p>';
+                return;
+            }
+
+            // Group by day for better visualization if needed, but for now simple cards
+            slots.forEach(slot => {
+                const card = document.createElement('div');
+                card.className = 'border rounded p-4 bg-blue-50 border-blue-200';
+                card.innerHTML = `
+                    <h3 class="font-bold text-blue-800">${slot.day}</h3>
+                    <p class="text-gray-700">${slot.start_time} - ${slot.end_time}</p>
+                `;
+                calendarGrid.appendChild(card);
+            });
+        }
+
+        function setLoading(isLoading) {
+            if (isLoading) {
+                generateBtn.innerHTML = '<div class="loader mr-2"></div> Generating...';
+                generateBtn.disabled = true;
+            } else {
+                generateBtn.innerHTML = '<span>Generate Calendar</span>';
+                generateBtn.disabled = false;
+            }
+        }
+
+        function showError(msg) {
+            errorMsg.innerText = msg;
+            errorMsg.classList.remove('hidden');
+        }
+
+        function hideError() {
+            errorMsg.classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
