@@ -1,6 +1,6 @@
 # Calendar Copilot
 
-Calendar Copilot is an AI-powered appointment scheduling assistant designed to streamline the process of setting up weekly availability. Instead of manually clicking through time slots on a calendar grid, users (tutors, consultants, etc.) can simply describe their availability in natural language. The system uses Generative AI to parse this input, visualize the proposed schedule, and save it to a database.
+Calendar Copilot is an AI-powered appointment scheduling assistant designed to streamline the process of setting up weekly availability. Instead of manually clicking through time slots on a calendar grid, users (tutors) can simply describe their availability in natural language. The system uses Generative AI to parse this input, visualize the proposed schedule, and save it to a database.
 
 ## Key Features
 
@@ -18,7 +18,7 @@ The system follows a modern web application architecture integrating a Django ba
 graph TD
     User["User / Tutor"] -->|"Input Natural Language"| UI["Frontend (HTML/JS/Tailwind)"]
     UI -->|"POST /api/generate-schedule"| API["Django Backend"]
-    API -->|"Prompt + Text"| AI["Gemini AI"]
+    API -->|"System prompt + Text"| AI["Gemini AI"]
     AI -->|"Structured JSON"| API
     API -->|"Proposed Slots"| UI
     User -->|"Confirm & Save"| UI
@@ -105,15 +105,32 @@ docker run -d -p 27017:27017 --name mongodb -v ~/mongo-data:/data/db mongo:lates
 ```
 
 ### 6. Run the Application
+
+#### Start the Backend API
 ```bash
 python3 manage.py runserver
 ```
+The Django server will start the API at **`http://127.0.0.1:8000/`**.
 
-Access the application at: **`http://127.0.0.1:8000/`**
+#### Launch the Frontend
+Since the frontend is isolated from the backend and uses absolute URLs to communicate with the API, you can open the user interface by:
+*   Opening **`scheduler/templates/index.html`** directly in your web browser.
+*   Using a local server like the **Live Server** extension in VS Code.
 
 ## Usage Guide
-1.  Enter your **Name** in the first input box.
-2.  Type your availability in the text area (e.g., *"Monday and Wednesday evenings after 6pm"*).
-3.  Click **Generate Calendar**.
-4.  Review the cards that appear.
-5.  Click **Save** to store your profile in MongoDB.
+
+
+## Limitations & Future Improvements
+
+While functional, this project is a prototype and has several known limitations that serve as opportunities for future development:
+
+### Limitations
+*   **No User Authentication:** The current system allows anyone to create and save schedules under any name. There is no login, password protection, or user profile management.
+*   **Basic Timezone Support:** Times are currently handled as local times without explicit timezone conversions, which may lead to discrepancies for remote teams.
+
+### Areas for Improvement
+*   **User Accounts:** Implement Django's authentication system to allow users to securely manage their own saved schedules like editing the schedule manually.
+*   **Arabic Support:** Add an Arabic support in the whole application
+*   **Calendar Integration:** Add functionality to export generated availability to Google Calendar, Outlook, or .iCal files.
+*   **Robust Frontend:** Migrate the vanilla JavaScript frontend to a framework like React or Angular for better state management and component modularity.
+*   **CI/CD Pipeline:** specific automated testing and deployment workflows to ensure code quality and easier updates.

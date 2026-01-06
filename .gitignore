@@ -8,3 +8,6 @@ project_plan
 # pycache
 __pycache__/
 test.txt
+
+# VSCode
+.vscode
